@@ -1,11 +1,13 @@
 import RPi.GPIO as GPIO
 import time, datetime
+import requests
 GPIO.setmode(GPIO.BCM)
 
 TOGGLE_SWITCH = 23
 BUTTON = 24
 LED = 25
 isArmed = False
+sandwichOrdered = False
 
 GPIO.setup(TOGGLE_SWITCH, GPIO.IN)
 GPIO.setup(BUTTON, GPIO.IN)
@@ -33,6 +35,9 @@ def order(channel):
   if isArmed:
     # place sandwich order
     print("Placing sandwich order.")
+    global sandwichOrdered
+    sandwichOrdered = True
+    requests.post("http://example.com:8080")
   else:
     print("Failed to place sandwich order. Box is currently disarmed.")
 
@@ -44,11 +49,11 @@ def setStatusLightOn():
   GPIO.output(LED, True)
   print("Status light is now on.")
   
-debounce = 200 # ms span to debounce switches
-# GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.RISING, callback = arm, bouncetime = debounce)
-# GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.FALLING, callback = disarm, bouncetime = debounce)
-GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.BOTH, callback = toggle, bouncetime = 50)
-GPIO.add_event_detect(BUTTON, GPIO.FALLING, callback = order, bouncetime = debounce)
+toggleDebounce = 50
+buttonDebounce = 200
+GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.BOTH, callback = toggle, bouncetime = toggleDebounce)
+GPIO.add_event_detect(BUTTON, GPIO.FALLING, callback = order, bouncetime = buttonDebounce)
+setStatusLightOn()
 
 while True:
   # do whatever you want to do repeatedly

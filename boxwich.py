@@ -1,7 +1,9 @@
 import RPi.GPIO as GPIO
 import time, datetime
 import requests
+import threading
 GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
 
 TOGGLE_SWITCH = 23
 BUTTON = 24
@@ -17,11 +19,15 @@ def arm():
   global isArmed
   isArmed = True
   print "isArmed: %r" % (isArmed, )
+  threading.Thread(target = rapidBlink).start()
 
 def disarm():
   global isArmed
   isArmed = False
   print "isArmed: %r" % (isArmed, )
+  setStatusLightOn()
+  global sandwichOrdered
+  sandwichOrdered = False
 
 def toggle(channel):
   if GPIO.input(TOGGLE_SWITCH):
@@ -31,15 +37,30 @@ def toggle(channel):
 
 def order(channel):
   print("Order button was pressed.")
-  print(isArmed)
   if isArmed:
     # place sandwich order
     print("Placing sandwich order.")
+    requests.post("http://example.com:8080")
     global sandwichOrdered
     sandwichOrdered = True
-    requests.post("http://example.com:8080")
+    confirmWithPulses()
   else:
     print("Failed to place sandwich order. Box is currently disarmed.")
+
+def rapidBlink():
+  global sandwichOrdered
+  while not sandwichOrdered:
+    GPIO.output(LED, True)
+    time.sleep(0.2)
+    GPIO.output(LED, False)
+    time.sleep(0.2)
+
+def confirmWithPulses():
+  for i in range (0, 3):
+    GPIO.output(LED, True)
+    time.sleep(0.75)
+    GPIO.output(LED, False)
+    time.sleep(0.75)
 
 def setStatusLightOff():
   GPIO.output(LED, False)

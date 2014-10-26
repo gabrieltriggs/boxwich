@@ -1,85 +1,89 @@
+# boxwich.py
+#
+# Triggs, Gabriel
+# 2014-10-26
+# Developed for HackNC with Jon Johnson and Taylor King
+
 import RPi.GPIO as GPIO
 import time, datetime
 import requests
-import threading
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 TOGGLE_SWITCH = 23
 BUTTON = 24
 LED = 25
-isArmed = False
-sandwichOrdered = False
 
 GPIO.setup(TOGGLE_SWITCH, GPIO.IN)
 GPIO.setup(BUTTON, GPIO.IN)
 GPIO.setup(LED, GPIO.OUT)
 
+isArmed = False
+hasOrderedSandwich = False
+
 def arm():
+  print "arm()"
   global isArmed
   isArmed = True
-  print "isArmed: %r" % (isArmed, )
-  threading.Thread(target = rapidBlink).start()
+  print "Box has been armed."
 
 def disarm():
+  print "disarm()"
   global isArmed
   isArmed = False
-  print "isArmed: %r" % (isArmed, )
+  print "Box has been disarmed."
+  global hasOrderedSandwich
+  hasOrderedSandwich = False
   setStatusLightOn()
-  global sandwichOrdered
-  sandwichOrdered = False
 
 def toggle(channel):
+  print "toggle()"
   if GPIO.input(TOGGLE_SWITCH):
     disarm()
   else:
     arm()
 
 def order(channel):
-  print("Order button was pressed.")
-  if isArmed:
-    # place sandwich order
-    print("Placing sandwich order.")
+  print "order()"
+  global isArmed
+  global hasOrderedSandwich
+  if isArmed and not hasOrderedSandwich:
+    print "Sending HTTP request to order sandwich."
     requests.post("http://example.com:8080")
-    global sandwichOrdered
-    sandwichOrdered = True
-    confirmWithPulses()
+    global hasOrderedSandwich
+    hasOrderedSandwich = True
+    print "Sandwich has been ordered."
+    showConfirmationBlinks()
+  elif isArmed and hasOrderedSandwich:
+    print "Box has not been properly re-armed since last sandwich order." 
+    print "Please disarm, arm, and try again."
   else:
-    print("Failed to place sandwich order. Box is currently disarmed.")
-
-def rapidBlink():
-  global sandwichOrdered
-  while not sandwichOrdered:
-    GPIO.output(LED, True)
-    time.sleep(0.2)
-    GPIO.output(LED, False)
-    time.sleep(0.2)
-
-def confirmWithPulses():
-  for i in range (0, 3):
-    GPIO.output(LED, True)
-    time.sleep(0.75)
-    GPIO.output(LED, False)
-    time.sleep(0.75)
+    print "Box is not armed. Flip the safety switch and try again."
 
 def setStatusLightOff():
+  print "setStatusLightOff()"
   GPIO.output(LED, False)
-  print("Status light is now off.")
 
 def setStatusLightOn():
+  print "setStatusLightOn()"
   GPIO.output(LED, True)
-  print("Status light is now on.")
-  
-toggleDebounce = 50
-buttonDebounce = 200
-GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.BOTH, callback = toggle, bouncetime = toggleDebounce)
-GPIO.add_event_detect(BUTTON, GPIO.FALLING, callback = order, bouncetime = buttonDebounce)
-setStatusLightOn()
 
+def showConfirmationBlinks():
+  print "showConfirmationBlinks()"
+  for i in range (0, 3):
+    setStatusLightOn()
+    time.sleep(0.75)
+    setStatusLightOff()
+    time.sleep(0.75)
+
+toggleSwitchDebounce = 50 # ms
+buttonDebounce = 200 # ms
+GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.BOTH, callback = toggle, bouncetime = toggleSwitchDebounce)
+GPIO.add_event_detect(BUTTON, GPIO.FALLING, callback = order, bouncetime = buttonDebounce)
+
+setStatusLightOn()
 while True:
-  # do whatever you want to do repeatedly
-  # this is absolutley just a placeholder
   timestamp = time.time()
   formattedTimestamp = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
   print formattedTimestamp
-  time.sleep(5)
+  time.sleep(10)  

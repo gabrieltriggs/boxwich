@@ -20,6 +20,12 @@ def disarm():
   isArmed = False
   print("Box is now disarmed.")
 
+def toggle():
+  if GPIO.input(TOGGLE_SWITCH, True):
+    arm()
+  else:
+    disarm()
+
 def order():
   print("Order button was pressed.")
   if isArmed:
@@ -38,17 +44,19 @@ def setStatusLightOn():
   
 def main():
   debounce = 300 # ms span to debounce switches
-  GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.RISING, callback = arm, bouncetime = debounce)
-  GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.FALLING, callback = disarm, bouncetime = debounce)
+  # GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.RISING, callback = arm, bouncetime = debounce)
+  # GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.FALLING, callback = disarm, bouncetime = debounce)
+  GPIO.add_event_detect(TOGGLE_SWITCH, GPIO.BOTH, callback = toggle, bouncetime = debounce)
   GPIO.add_event_detect(BUTTON, GPIO.RISING, callback = order, bouncetime = debounce)
 
   while True:
     # do whatever you want to do repeatedly
     # this is absolutley just a placeholder
     timestamp = time.time()
-    formattedTimestamp = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:S')
+    formattedTimestamp = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
     print formattedTimestamp
     time.sleep(5)
 
 if __name__ == "__main__":
   main()
+  GPIO.cleanup()

@@ -22,13 +22,11 @@ isArmed = False
 hasOrderedSandwich = False
 
 def arm():
-  print "arm()"
   global isArmed
   isArmed = True
   print "Box has been armed."
 
 def disarm():
-  print "disarm()"
   global isArmed
   isArmed = False
   print "Box has been disarmed."
@@ -37,14 +35,12 @@ def disarm():
   setStatusLightOn()
 
 def toggle(channel):
-  print "toggle()"
   if GPIO.input(TOGGLE_SWITCH):
     disarm()
   else:
     arm()
 
 def order(channel):
-  print "order()"
   global isArmed
   global hasOrderedSandwich
   if isArmed and not hasOrderedSandwich:
@@ -61,15 +57,12 @@ def order(channel):
     print "Box is not armed. Flip the safety switch and try again."
 
 def setStatusLightOff():
-  print "setStatusLightOff()"
   GPIO.output(LED, False)
 
 def setStatusLightOn():
-  print "setStatusLightOn()"
   GPIO.output(LED, True)
 
 def showConfirmationBlinks():
-  print "showConfirmationBlinks()"
   for i in range (0, 3):
     setStatusLightOn()
     time.sleep(0.75)
